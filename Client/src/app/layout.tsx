@@ -14,8 +14,9 @@ const fontSerif = FontSerif({
 });
 
 export const metadata: Metadata = {
-  title: "Conference Master",
+  title: "JOINup - Conferences Made Easy",
   description: "Effortlessly plan, manage, and elevate your events with Conference Master — the all-in-one platform for streamlined conference organization, attendee engagement, and impactful experiences.",
+  keywords: "conference, events, management, education, free",
 };
 
 export default function RootLayout({

@@ -1,0 +1,30 @@
+import { Button } from "./ui/button";
+
+const Navbar = () => {
+    return (
+      <nav className="absolute top-0 left-0 w-full flex justify-between items-center px-8 py-4 backdrop-blur-md bg-white/10 border-b border-white/10 text-white z-50">
+        {/* Logo */}
+        <div className="text-2xl text-white font-bold tracking-wide" style={{ fontFamily: "var(--font-sans)" }}>
+          JOINup
+        </div>
+  
+        {/* Center Text (Hidden on small screens) */}
+        <p className="hidden md:block text-white text-sm">
+          End-to-end tools to simplify your conference management process.
+        </p>
+  
+        {/* Buttons */}
+        {/* lets use just sign in for the sign in/sign up button */}
+        <div className="flex gap-4">
+          <Button variant="outline" className="border-[#6A011D] text-black cursor-pointer">
+            Sign In
+          </Button>
+          <Button className="bg-[#6A011D] text-white hover:bg-[#550117] cursor-pointer">
+            Sign Up
+          </Button>
+        </div>
+      </nav>
+    );
+  };
+
+export default Navbar

@@ -1,0 +1,348 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// Enums
+enum UserRole {
+  ORGANIZER
+  ATTENDEE
+  ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum AttendeeStatus {
+  REGISTERED
+  CONFIRMED
+  ATTENDED
+  NO_SHOW
+}
+
+enum MaterialType {
+  SLIDES
+  POSTER
+  PAPER
+  VIDEO
+  OTHER
+}
+
+enum PresentationStatus {
+  DRAFT              // Being edited by the presenter
+  SUBMITTED          // Awaiting review by organizer
+  REVISION_REQUIRED  // Organizer asked for changes
+  APPROVED           // Scheduled or ready to schedule
+  REJECTED
+}
+
+enum SubmissionType {
+  TALK
+  POSTER
+  DEMO
+  LIGHTNING
+  WORKSHOP
+}
+
+
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  password    String
+  role        UserRole @default(ATTENDEE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  logo        String?
+
+  profile     UserProfile?
+
+  // Relations
+  organizedEvents         Event[] @relation("EventOrganizer")
+  attendedEvents          EventAttendee[]
+  favorites               Favorite[]
+  authoredPresentations   PresentationAuthor[]
+  adminActionsTaken       AdminActionLog[] @relation("AdminToAction")
+  adminLogsAsOrganizer    AdminActionLog[] @relation("OrganizerToAction")
+  conferenceRegistrations ConferenceRegistration[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String   @default("#6A011D")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  events Event[]
+
+  @@map("categories")
+}
+
+model Event {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  startDate     DateTime
+  endDate       DateTime
+  slug          String      @unique
+  status        EventStatus @default(DRAFT)
+  isFeatured    Boolean     @default(false)
+  
+  // Location 
+  locationId    String
+  location      Location @relation(fields: [locationId], references: [id])
+  
+  // Basic settings
+  maxCapacity   Int         @default(100)
+  isEducational Boolean     @default(true)
+
+  images        EventImage?
+  
+  // Relations
+  organizerId   String
+  organizer     User        @relation("EventOrganizer", fields: [organizerId], references:   [id])
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+  attendees     EventAttendee[]
+  days          ConferenceDay[]
+  registrations ConferenceRegistration[]
+
+  // Analytics
+  viewCount     Int @default(0)
+  attendeeCount Int @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("events")
+}
+
+model Location {
+  id      String  @id @default(cuid())
+  city    String
+  country String
+  venue   String?
+  events  Event[]
+}
+
+model EventImage {
+  id         String   @id @default(cuid())
+  banner     String?
+  thumbnail  String?
+  event      Event    @relation(fields: [eventId], references: [id])
+  eventId    String   @unique
+}
+
+model EventAttendee {
+  id       String           @id @default(cuid())
+  status   AttendeeStatus   @default(REGISTERED)
+  registeredAt DateTime     @default(now())
+  
+  // Relations
+  userId   String
+  user     User             @relation(fields: [userId], references: [id])
+  eventId  String
+  event    Event            @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@map("event_attendees")
+}
+
+model ConferenceDay {
+  id        String   @id @default(cuid())
+  date      DateTime
+  sortOrder Int
+
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  sections  Section[]
+
+  @@unique([eventId, date])
+  @@map("conference_days")
+}
+
+model Section {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  sortOrder   Int      // For sorting within the day
+  startTime   DateTime
+  endTime     DateTime
+
+  dayId       String
+  day         ConferenceDay @relation(fields: [dayId], references: [id])
+
+  presentations Presentation[]
+  breaks         Break[]
+
+  @@map("sections")
+}
+
+model Presentation {
+  id             String   @id @default(cuid())
+  title          String
+  abstract       String
+  durationMin    Int
+  keywords       String[] // For full-text search
+  status         PresentationStatus @default(DRAFT)
+  submissionType SubmissionType
+  sortOrder      Int      // Position in section
+  startTime      DateTime?
+  endTime        DateTime?
+
+
+  sectionId      String
+  section        Section  @relation(fields: [sectionId], references: [id])
+  metrics        PresentationMetrics?
+
+  authors        PresentationAuthor[]
+  materials      PresentationMaterial[]
+  favorites      Favorite[]
+  viewCount      Int      @default(0)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  submittedAt    DateTime?
+
+  @@map("presentations")
+  @@index([title])
+  @@index([abstract])
+}
+
+model PresentationAuthor {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id])
+
+  affiliationId  String?
+  affiliation    Affiliation? @relation(fields: [affiliationId], references: [id])
+
+  isCorrespondingAuthor Boolean @default(false)
+
+  @@unique([userId, presentationId])
+  @@map("presentation_authors")
+}
+
+model Affiliation {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  country String?
+
+  authors PresentationAuthor[]
+
+  @@map("affiliations")
+}
+
+model PresentationMaterial {
+  id             String   @id @default(cuid())
+  fileUrl        String   // Uploaded file reference
+  fileType       MaterialType
+  label          String?
+
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id])
+
+  uploadedAt     DateTime @default(now())
+
+  @@map("presentation_materials")
+}
+
+model Break {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+
+  sectionId   String
+  section     Section  @relation(fields: [sectionId], references: [id])
+
+  @@map("breaks")
+}
+
+model Favorite {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id])
+
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, presentationId])
+  @@map("favorites")
+}
+
+model AdminActionLog {
+  id              String   @id @default(cuid())
+  adminId         String
+  organizerId     String
+  action          String   // e.g., "UPDATE_PRESENTATION"
+  targetModel     String   // e.g., "Presentation"
+  targetId        String   // id of the record modified
+  reason          String?  // optional justification
+  timestamp       DateTime @default(now())
+
+  admin           User     @relation("AdminToAction", fields: [adminId], references: [id])
+  organizer       User     @relation("OrganizerToAction", fields: [organizerId], references: [id])
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+  fullName    String
+  bio         String?
+  institution String?
+  photoUrl    String?     // Optional avatar
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ConferenceRegistration {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  event       Event    @relation(fields: [eventId], references: [id])
+  eventId     String
+
+  registeredAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+}
+
+model PresentationMetrics {
+  id             String        @id @default(cuid())
+  presentation   Presentation  @relation(fields: [presentationId], references: [id])
+  presentationId String        @unique
+
+  viewCount      Int           @default(0)
+  lastViewedAt   DateTime?
+
+  updatedAt      DateTime      @updatedAt
+}
+
