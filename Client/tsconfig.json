@@ -26,6 +26,6 @@
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "types": [],
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/context"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/context-unused"],
   "exclude": ["node_modules"]
 }

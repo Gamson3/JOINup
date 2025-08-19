@@ -42,6 +42,31 @@ async function main() {
     })
   ]);
 
+  // Create locations first
+  const locations = await Promise.all([
+    prisma.location.create({
+      data: {
+        city: 'San Francisco',
+        country: 'USA',
+        venue: 'Tech Convention Center'
+      }
+    }),
+    prisma.location.create({
+      data: {
+        city: 'New York',
+        country: 'USA',
+        venue: 'Marketing Innovation Center'
+      }
+    }),
+    prisma.location.create({
+      data: {
+        city: 'Seattle',
+        country: 'USA',
+        venue: 'Seattle Convention Center'
+      }
+    })
+  ]);
+
   // Create test users
   const hashedPassword = await bcrypt.hash('password123', 10);
   
@@ -63,7 +88,7 @@ async function main() {
     }
   });
 
-  // Create sample events
+  // Create sample events - Fix: Use locationId instead of city/country/venue
   const events = await Promise.all([
     prisma.event.create({
       data: {
@@ -71,9 +96,7 @@ async function main() {
         description: 'Learn the latest in web development technologies and frameworks. This comprehensive conference covers React, Next.js, TypeScript, and modern deployment strategies.',
         startDate: new Date('2025-02-15'),
         endDate: new Date('2025-02-17'),
-        city: 'San Francisco',
-        country: 'USA',
-        venue: 'Tech Convention Center',
+        locationId: locations[0].id, // San Francisco location
         slug: 'modern-web-development-conference-2025',
         status: 'PUBLISHED',
         isFeatured: true,
@@ -88,9 +111,7 @@ async function main() {
         description: 'Hands-on workshop for digital marketing professionals covering SEO, social media marketing, and analytics.',
         startDate: new Date('2025-03-10'),
         endDate: new Date('2025-03-12'),
-        city: 'New York',
-        country: 'USA',
-        venue: 'Marketing Innovation Center',
+        locationId: locations[1].id, // New York location
         slug: 'digital-marketing-strategies-workshop-2025',
         status: 'PUBLISHED',
         isFeatured: false,
@@ -105,9 +126,7 @@ async function main() {
         description: 'Educational summit on artificial intelligence and machine learning applications in business.',
         startDate: new Date('2025-04-20'),
         endDate: new Date('2025-04-22'),
-        city: 'Seattle',
-        country: 'USA',
-        venue: 'Seattle Convention Center',
+        locationId: locations[2].id, // Seattle location
         slug: 'ai-machine-learning-summit-2025',
         status: 'DRAFT',
         isFeatured: true,
@@ -131,6 +150,7 @@ async function main() {
   console.log(`📧 Organizer: ${organizer.email} / password123`);
   console.log(`📧 Attendee: ${attendee.email} / password123`);
   console.log(`📁 Created ${categories.length} categories`);
+  console.log(`📍 Created ${locations.length} locations`);
   console.log(`🎯 Created ${events.length} events`);
 }
 

@@ -11,13 +11,18 @@ import morgan from "morgan";
 
 
 /* ROUTE IMPORT */  
-//  route imports to be added when we have written them
+//  route imports to be added here
+console.log("Loading authRoutes...");
+import authRoutes from './routes/authRoutes';
+console.log("authRoutes loaded.");
 
 
 /* CONFIGURATIONS - setup files*/ 
 // Load environment variables
 dotenv.config();
 const app = express();
+
+// Basic middleware
 app.use(express.json());
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
@@ -44,6 +49,7 @@ app.get("/", (req, res) => {
 
 // API Routes
 // where our routes will be created
+app.use('/api/auth', authRoutes);
 
 
 // Error handling middleware
@@ -57,7 +63,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 

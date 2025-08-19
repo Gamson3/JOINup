@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Source_Sans_3 as FontSans, Source_Serif_4 as FontSerif } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import StoreProvider from "../state/redux";
 
 const fontSans = FontSans({
   variable: "--font-sans",
@@ -29,7 +31,11 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} font-sans ${fontSerif.variable} font-serif antialiased`}
       >
-        {children}
+        <StoreProvider>
+          <AuthProvider>
+            {children}  
+          </AuthProvider>
+        </StoreProvider>
       </body>
     </html>
   );

@@ -28,6 +28,7 @@ interface DashboardSidebarProps {
   onSignOut?: () => void;
   headerTitle?: string;
   className?: string;
+  children: React.ReactNode; // Content area
 }
 
 const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -35,7 +36,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   user,
   onSignOut,
   headerTitle = "Dashboard",
-  className = ""
+  className = "",
+  children
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -51,10 +53,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const handleSignOut = () => {
     if (onSignOut) {
       onSignOut();
-    } else {
-      // Default sign out behavior
-      console.log('Sign out clicked');
-      // TODO: Implement default sign out logic
     }
   };
 
@@ -201,6 +199,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* This is where the page content will be rendered */}
         <main className="p-6">
           {/* Content will be passed as children in the layout components */}
+          {children}
         </main>
       </div>
     </div>

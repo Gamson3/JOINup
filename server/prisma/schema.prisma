@@ -13,9 +13,10 @@ datasource db {
 
 // Enums
 enum UserRole {
+  ADMIN
   ORGANIZER
   ATTENDEE
-  ADMIN
+  PENDING // Default role for new users, requires onboarding
 }
 
 enum EventStatus {
@@ -63,7 +64,7 @@ model User {
   email       String   @unique
   name        String
   password    String
-  role        UserRole @default(ATTENDEE)
+  role        UserRole @default(PENDING) // Default to PENDING until onboarding is complete
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   logo        String?
@@ -78,6 +79,7 @@ model User {
   adminActionsTaken       AdminActionLog[] @relation("AdminToAction")
   adminLogsAsOrganizer    AdminActionLog[] @relation("OrganizerToAction")
   conferenceRegistrations ConferenceRegistration[]
+  refreshTokens           RefreshToken[]
 
   @@map("users")
 }
@@ -344,5 +346,16 @@ model PresentationMetrics {
   lastViewedAt   DateTime?
 
   updatedAt      DateTime      @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
 }
 

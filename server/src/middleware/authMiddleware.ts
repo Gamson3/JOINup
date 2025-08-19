@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Extend Request interface to include user
+// Extend Express Request interface
 declare global {
   namespace Express {
     interface Request {
@@ -12,25 +12,22 @@ declare global {
         id: string;
         email: string;
         name: string;
-        role: 'ORGANIZER' | 'ATTENDEE' | 'ADMIN';
+        role: 'ORGANIZER' | 'ATTENDEE' | 'ADMIN' | 'PENDING';
       };
     }
   }
 }
 
-// Interface for JWT payload
 interface JWTPayload {
-  id: string;
-  email: string;
-  name: string;
-  role: 'ORGANIZER' | 'ATTENDEE' | 'ADMIN';
+  userId: string;
+  type: 'access' | 'refresh';
   iat: number;
   exp: number;
 }
 
 /**
- * Main authentication middleware
- * Verifies JWT token and attaches user to request object
+ * Middleware to authenticate JWT tokens
+ * Sets req.user if valid token is provided
  */
 export const authenticateToken = async (
   req: Request,
@@ -38,32 +35,38 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Get token from Authorization header
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       res.status(401).json({ 
         success: false,
         message: 'Access token required',
-        code: 'TOKEN_MISSING'
+        code: 'TOKEN_REQUIRED'
       });
       return;
     }
 
-    // Verify token
+    // Verify token - Fix: Use correct JWT verify method
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+    
+    if (decoded.type !== 'access') {
+      res.status(401).json({ 
+        success: false,
+        message: 'Invalid token type',
+        code: 'INVALID_TOKEN_TYPE'
+      });
+      return;
+    }
 
-    // Optional: Check if user still exists in database
+    // Get user from database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
         name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
+        role: true
       }
     });
 
@@ -76,29 +79,20 @@ export const authenticateToken = async (
       return;
     }
 
-    // Attach user to request object
-    req.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    };
-
+    req.user = user;
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
-
     if (error instanceof jwt.JsonWebTokenError) {
-      res.status(403).json({ 
+      res.status(401).json({ 
         success: false,
         message: 'Invalid token',
-        code: 'TOKEN_INVALID'
+        code: 'INVALID_TOKEN'
       });
       return;
     }
 
     if (error instanceof jwt.TokenExpiredError) {
-      res.status(403).json({ 
+      res.status(401).json({ 
         success: false,
         message: 'Token expired',
         code: 'TOKEN_EXPIRED'
@@ -106,6 +100,7 @@ export const authenticateToken = async (
       return;
     }
 
+    console.error('Authentication error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Authentication failed',
@@ -116,7 +111,7 @@ export const authenticateToken = async (
 
 /**
  * Optional authentication middleware
- * Attaches user to request if token is valid, but doesn't require authentication
+ * Sets req.user if valid token is provided, but doesn't require it
  */
 export const optionalAuth = async (
   req: Request,
@@ -128,15 +123,21 @@ export const optionalAuth = async (
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      // No token provided, continue without authentication
       next();
       return;
     }
 
+    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
     
+    if (decoded.type !== 'access') {
+      next();
+      return;
+    }
+
+    // Get user from database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
@@ -165,7 +166,7 @@ export const optionalAuth = async (
  * Role-based authorization middleware
  * Requires specific user roles
  */
-export const requireRole = (...allowedRoles: ('ORGANIZER' | 'ATTENDEE' | 'ADMIN')[]) => {
+export const requireRole = (...allowedRoles: ('ORGANIZER' | 'ATTENDEE' | 'ADMIN' | 'PENDING')[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({ 
@@ -190,7 +191,7 @@ export const requireRole = (...allowedRoles: ('ORGANIZER' | 'ATTENDEE' | 'ADMIN'
 };
 
 /**
- * Admin-only middleware
+ * Middleware to require admin role
  */
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
@@ -215,7 +216,7 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
 };
 
 /**
- * Organizer-only middleware
+ * Middleware to require organizer role
  */
 export const requireOrganizer = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
@@ -352,11 +353,7 @@ export const validateEventOwnership = async (
     // Check if user owns the event
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { 
-        id: true,
-        organizerId: true,
-        title: true
-      }
+      select: { organizerId: true }
     });
 
     if (!event) {
@@ -371,60 +368,19 @@ export const validateEventOwnership = async (
     if (event.organizerId !== req.user.id) {
       res.status(403).json({ 
         success: false,
-        message: 'Access denied. You can only modify your own events',
+        message: 'Access denied. You can only manage your own events',
         code: 'EVENT_OWNERSHIP_REQUIRED'
       });
       return;
     }
 
-    // Attach event to request for potential use in handlers
-    (req as any).event = event;
     next();
   } catch (error) {
     console.error('Event ownership validation error:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Ownership validation failed',
-      code: 'OWNERSHIP_CHECK_ERROR'
+      message: 'Event ownership validation failed',
+      code: 'EVENT_OWNERSHIP_CHECK_ERROR'
     });
   }
 };
-
-/**
- * Helper function to generate JWT tokens
- */
-export const generateAuthToken = (user: {
-  id: string;
-  email: string;
-  name: string;
-  role: 'ORGANIZER' | 'ATTENDEE' | 'ADMIN';
-}): string => {
-  return jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    },
-    process.env.JWT_SECRET!,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-      issuer: 'conference-manager',
-      audience: 'conference-manager-users'
-    }
-  );
-};
-
-/**
- * Helper function to verify and decode JWT tokens
- */
-export const verifyAuthToken = (token: string): JWTPayload | null => {
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
-  } catch (error) {
-    return null;
-  }
-};
-
-// Export prisma instance for use in other modules
-export { prisma };
