@@ -8,13 +8,9 @@ import rateLimit from 'express-rate-limit';
 import bodyParser from "body-parser";
 import helmet from "helmet";
 import morgan from "morgan";
-
-
-/* ROUTE IMPORT */  
-//  route imports to be added here
-console.log("Loading authRoutes...");
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes';
-console.log("authRoutes loaded.");
+import errorHandler from './middleware/errorHandler';
 
 
 /* CONFIGURATIONS - setup files*/ 
@@ -22,14 +18,17 @@ console.log("authRoutes loaded.");
 dotenv.config();
 const app = express();
 
+// Trust proxy (needed if behind nginx/Heroku for secure cookies)
+app.set('trust proxy', 1);
+
 // Basic middleware
-app.use(express.json());
 app.use(helmet());
-app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
-app.use(morgan("common"));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cors());
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 
 
 // Rate limiting
@@ -50,6 +49,9 @@ app.get("/", (req, res) => {
 // API Routes
 // where our routes will be created
 app.use('/api/auth', authRoutes);
+
+// After routes:
+app.use(errorHandler);
 
 
 // Error handling middleware

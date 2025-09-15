@@ -51,13 +51,13 @@ const HeroSection = () => (
 
     <div className="mt-6 flex gap-4 z-20">
       <Button 
-       className="bg-[#6A011D] text-white px-6 py-3 rounded-xl shadow-lg hover:bg-[#550117] h-12 cursor-pointer"
+       className="px-6 py-5 bg-primary text-white hover:bg-primary/90 rounded-sm shadow-lg cursor-pointer"
       >
         Get Started
       </Button>
       <Button
-       variant="outline" 
-       className="bg-white text-gray-900 border-1 px-6 py-3 rounded-xl shadow-lg h-12 cursor-pointer"
+      //  variant="outline" 
+       className="px-6 py-5 bg-white text-text hover:bg-muted rounded-sm shadow-lg cursor-pointer"
       >
         Learn More
       </Button>

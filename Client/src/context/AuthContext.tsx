@@ -4,13 +4,17 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/state/redux';
 import { setCredentials, clearCredentials, setError, clearError, setLoading } from '@/state/authSlice';
-import { apiClient, getUser, clearTokens, setUser, getAccessToken, getRefreshToken, type User } from '@/lib/auth';
+import { apiClient, getUser, clearTokens, setUser as persistUser, getAccessToken, setTokens, type User } from '@/lib/auth';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
+  loginAttendee: (email: string, password: string, remember?: boolean) => Promise<void>;
+  loginOrganizer: (email: string, password: string, remember?: boolean) => Promise<void>;
+  register: (email: string, password: string, name: string, remember?: boolean) => Promise<void>;
+  registerAttendee: (email: string, password: string, name: string, remember?: boolean) => Promise<void>;
+  registerOrganizer: (email: string, password: string, name: string, remember?: boolean) => Promise<void>;
   updateUserRole: (role: 'ORGANIZER' | 'ATTENDEE') => Promise<void>;
   logout: () => Promise<void>;
   clearAuthError: () => void;
@@ -32,78 +36,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const redirectByRoles = (roles: User['roles']) => {
+    // Adjust priority if needed
+    if (roles?.includes('admin')) return router.push('/admin');
+    if (roles?.includes('organizer')) return router.push('/organizer');
+    if (roles?.includes('attendee')) return router.push('/attendee');
+    if (roles?.includes('pending' as any)) return router.push('/onboarding');
+    return router.push('/');
+  };
+
+  function handleAuthSuccess(userData: User, accessToken: string, remember: boolean) {
+    setTokens(accessToken, remember);
+    persistUser(userData, remember);
+    setUserState(userData);
+    dispatch(setCredentials({ user: userData, accessToken }));
+    redirectByRoles(userData.roles);
+  }
+
+  const loginAttendee = async (email: string, password: string, remember: boolean = false) => {
     try {
-      setLoadingState(true);
-      dispatch(setLoading(true));
-      dispatch(clearError());
-
-      const response = await apiClient.login(email, password);
-      const userData = response.user;
-      const { accessToken, refreshToken } = response;
-
-      setUserState(userData);
-      dispatch(setCredentials({
-        user: userData,
-        accessToken,
-        refreshToken
-      }));
-
-      // Redirect based on user role
-      if (userData.role === 'PENDING') {
-        router.push('/onboarding');
-      } else if (userData.role === 'ORGANIZER') {
-        router.push('/organizer');
-      } else if (userData.role === 'ATTENDEE') {
-        router.push('/attendee');
-      } else if (userData.role === 'ADMIN') {
-        router.push('/admin');
-      }
-
+      setLoadingState(true); dispatch(setLoading(true)); dispatch(clearError());
+      const response = await apiClient.loginAttendee(email, password);
+      const { user: userData, accessToken } = response.data;
+      handleAuthSuccess(userData, accessToken, remember);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
-      dispatch(setError(errorMessage));
-      throw new Error(errorMessage);
+      const msg = error?.message || 'Login failed';
+      dispatch(setError(msg));
+      throw new Error(msg);
     } finally {
-      setLoadingState(false);
-      dispatch(setLoading(false));
+      setLoadingState(false); dispatch(setLoading(false));
     }
   };
 
-  const register = async (
-    email: string, 
-    password: string, 
-    name: string
-  ): Promise<void> => {
+  const loginOrganizer = async (email: string, password: string, remember: boolean = false) => {
     try {
-      setLoadingState(true);
-      dispatch(setLoading(true));
-      dispatch(clearError());
-
-      // Register with PENDING role
-      const response = await apiClient.register(email, password, name, 'PENDING');
-      const userData = response.user;
-      const { accessToken, refreshToken } = response;
-
-      setUserState(userData);
-      dispatch(setCredentials({
-        user: userData,
-        accessToken,
-        refreshToken
-      }));
-
-      // Always redirect to onboarding after registration
-      router.push('/onboarding');
-
+      setLoadingState(true); dispatch(setLoading(true)); dispatch(clearError());
+      const response = await apiClient.loginOrganizer(email, password);
+      const { user: userData, accessToken } = response.data;
+      handleAuthSuccess(userData, accessToken, remember);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
-      dispatch(setError(errorMessage));
-      throw new Error(errorMessage);
+      const msg = error?.message || 'Login failed';
+      dispatch(setError(msg));
+      throw new Error(msg);
     } finally {
-      setLoadingState(false);
-      dispatch(setLoading(false));
+      setLoadingState(false); dispatch(setLoading(false));
     }
   };
+
+  // Keep existing login for attendee default
+  const login = (email: string, password: string, remember: boolean = false) =>
+    loginAttendee(email, password, remember);
+
+  const registerAttendee = async (email: string, password: string, name: string, remember: boolean = true) => {
+    try {
+      setLoadingState(true); dispatch(setLoading(true)); dispatch(clearError());
+      const response = await apiClient.registerAttendee(email, password, name);
+      const { user: userData, accessToken } = response.data;
+      handleAuthSuccess(userData, accessToken, remember);
+      // New users flow
+      // router.push('/onboarding'); // enable if you want onboarding for attendees
+    } catch (error: any) {
+      const msg = error?.message || 'Registration failed';
+      dispatch(setError(msg));
+      throw new Error(msg);
+    } finally {
+      setLoadingState(false); dispatch(setLoading(false));
+    }
+  };
+
+  const registerOrganizer = async (email: string, password: string, name: string, remember: boolean = true) => {
+    try {
+      setLoadingState(true); dispatch(setLoading(true)); dispatch(clearError());
+      const response = await apiClient.registerOrganizer(email, password, name);
+      const { user: userData, accessToken } = response.data;
+      handleAuthSuccess(userData, accessToken, remember);
+      // router.push('/organizer/onboarding'); // optional organizer-specific onboarding
+    } catch (error: any) {
+      const msg = error?.message || 'Registration failed';
+      dispatch(setError(msg));
+      throw new Error(msg);
+    } finally {
+      setLoadingState(false); dispatch(setLoading(false));
+    }
+  };
+
+  // Keep existing register as attendee default
+  const register = (email: string, password: string, name: string, remember: boolean = true) =>
+    registerAttendee(email, password, name, remember);
 
   const updateUserRole = async (role: 'ORGANIZER' | 'ATTENDEE'): Promise<void> => {
     try {
@@ -112,25 +131,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch(clearError());
 
       const response = await apiClient.updateUserRole(role);
-      const updatedUser = response.user;
+      const updatedUser = response.data.user;
 
       // Update user in state and localStorage
       setUserState(updatedUser);
-      setUser(updatedUser);
-      
-      // Get current tokens from localStorage
-      const currentAccessToken = getAccessToken();
-      const currentRefreshToken = getRefreshToken();
-      
-      // Update Redux state with existing tokens
+      persistUser(updatedUser);
+
+      // Keep current access token (or call refresh if your JWT embeds roles)
+      const currentAccessToken = getAccessToken() || '';
       dispatch(setCredentials({
         user: updatedUser,
-        accessToken: currentAccessToken || '',
-        refreshToken: currentRefreshToken || ''
+        accessToken: currentAccessToken
       }));
-
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update role';
+      const errorMessage = error?.message || 'Failed to update role';
       dispatch(setError(errorMessage));
       throw new Error(errorMessage);
     } finally {
@@ -161,7 +175,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       loading,
       login,
+      loginAttendee,
+      loginOrganizer,
       register,
+      registerAttendee,
+      registerOrganizer,
       updateUserRole,
       logout,
       clearAuthError

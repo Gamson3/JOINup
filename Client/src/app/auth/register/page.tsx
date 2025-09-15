@@ -10,7 +10,7 @@ import { Eye, EyeOff, Loader2, User, Mail, Lock, Building, CheckCircle } from 'l
 import { validateEmail, validatePassword, validateName, validatePasswordMatch } from '@/utils/validation';
 
 export default function RegisterPage() {
-  const { register, loading, clearAuthError } = useAuth();
+  const { registerAttendee, loading, clearAuthError } = useAuth();
   const globalError = useAppSelector(selectAuthError);
   
   const [formData, setFormData] = useState({
@@ -116,8 +116,7 @@ export default function RegisterPage() {
       setLocalError('');
       clearAuthError();
       const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
-      // Remove role parameter - will be set during onboarding
-      await register(formData.email.trim(), formData.password, fullName);
+      await registerAttendee(formData.email.trim(), formData.password, fullName);
     } catch (err: any) {
       setLocalError(err.message);
     }
@@ -145,20 +144,20 @@ export default function RegisterPage() {
   const hasFieldErrors = Object.values(fieldErrors).some(errors => errors.length > 0);
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         
         {/* Card */}
-        <div className="bg-white rounded-xl shadow-3xl p-6">
+        <div className="bg-card rounded-xl shadow-3xl p-6">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gradient-to-r from-[#6A011D] to-[#8B0000] mb-3">
-              <User className="h-6 w-6 text-white" />
+            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gradient-to-r from-primary to-accent mb-3">
+              <User className="h-6 w-6 text-primary-foreground" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-foreground">
               Welcome to JOINup
             </h2>
-            <p className="mt-1 text-gray-600 text-sm">
+            <p className="mt-1 text-muted-foreground text-sm">
               Create your account to get started
             </p>
           </div>
@@ -168,18 +167,18 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               {/* First Name */}
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name <span className="text-red-500">*</span>
+                <label htmlFor="firstName" className="block text-sm font-medium text-foreground/80 mb-1">
+                  First Name <span className="text-destructive">*</span>
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     id="firstName"
                     name="firstName"
                     type="text"
                     required
-                    className={`w-full pl-10 pr-4 py-1.5 border rounded outline-none ${
-                      fieldErrors.firstName?.length > 0 ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full pl-10 pr-4 py-1.5 border rounded outline-none bg-background text-foreground placeholder:text-muted-foreground ${
+                      fieldErrors.firstName?.length > 0 ? 'border-destructive/50' : 'border-border'
                     }`}
                     placeholder="First name"
                     value={formData.firstName}
@@ -187,28 +186,28 @@ export default function RegisterPage() {
                     onBlur={handleBlur}
                   />
                   {fieldErrors.firstName?.length === 0 && formData.firstName && (
-                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                    <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                   )}
                 </div>
                 {fieldErrors.firstName && fieldErrors.firstName.map((error, index) => (
-                  <p key={index} className="mt-1 text-xs text-red-600">{error}</p>
+                  <p key={index} className="mt-1 text-xs text-destructive">{error}</p>
                 ))}
               </div>
 
               {/* Last Name */}
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name <span className="text-red-500">*</span>
+                <label htmlFor="lastName" className="block text-sm font-medium text-foreground/80 mb-1">
+                  Last Name <span className="text-destructive">*</span>
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     id="lastName"
                     name="lastName"
                     type="text"
                     required
-                    className={`w-full pl-10 pr-4 py-1.5 border rounded outline-none ${
-                      fieldErrors.lastName?.length > 0 ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full pl-10 pr-4 py-1.5 border rounded outline-none bg-background text-foreground placeholder:text-muted-foreground ${
+                      fieldErrors.lastName?.length > 0 ? 'border-destructive/50' : 'border-border'
                     }`}
                     placeholder="Last name"
                     value={formData.lastName}
@@ -216,29 +215,29 @@ export default function RegisterPage() {
                     onBlur={handleBlur}
                   />
                   {fieldErrors.lastName?.length === 0 && formData.lastName && (
-                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                    <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                   )}
                 </div>
                 {fieldErrors.lastName && fieldErrors.lastName.map((error, index) => (
-                  <p key={index} className="mt-1 text-xs text-red-600">{error}</p>
+                  <p key={index} className="mt-1 text-xs text-destructive">{error}</p>
                 ))}
               </div>
             </div>
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address <span className="text-red-500">*</span>
+              <label htmlFor="email" className="block text-sm font-medium text-foreground/80 mb-1">
+                Email Address <span className="text-destructive">*</span>
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   id="email"
                   name="email"
                   type="email"
                   required
-                  className={`w-full pl-10 pr-10 py-1.5 border rounded outline-none ${
-                    fieldErrors.email?.length > 0 ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full pl-10 pr-10 py-1.5 border rounded outline-none bg-background text-foreground placeholder:text-muted-foreground ${
+                    fieldErrors.email?.length > 0 ? 'border-destructive/50' : 'border-border'
                   }`}
                   placeholder="Enter your email address"
                   value={formData.email}
@@ -246,28 +245,28 @@ export default function RegisterPage() {
                   onBlur={handleBlur}
                 />
                 {fieldErrors.email?.length === 0 && formData.email && (
-                  <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                 )}
               </div>
               {fieldErrors.email && fieldErrors.email.map((error, index) => (
-                <p key={index} className="mt-1 text-xs text-red-600">{error}</p>
+                <p key={index} className="mt-1 text-xs text-destructive">{error}</p>
               ))}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password <span className="text-red-500">*</span>
+              <label htmlFor="password" className="block text-sm font-medium text-foreground/80 mb-1">
+                Password <span className="text-destructive">*</span>
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  className={`w-full pl-10 pr-16 py-1.5 border rounded outline-none ${
-                    fieldErrors.password?.length > 0 ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full pl-10 pr-16 py-1.5 border rounded outline-none bg-background text-foreground placeholder:text-muted-foreground ${
+                    fieldErrors.password?.length > 0 ? 'border-destructive/50' : 'border-border'
                   }`}
                   placeholder="Create a strong password"
                   value={formData.password}
@@ -276,24 +275,24 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-8 top-1/2 transform -translate-y-1/2"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
                 {fieldErrors.password?.length === 0 && formData.password && (
-                  <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                 )}
               </div>
               {fieldErrors.password && fieldErrors.password.map((error, index) => (
-                <p key={index} className="mt-1 text-xs text-red-600">{error}</p>
+                <p key={index} className="mt-1 text-xs text-destructive">{error}</p>
               ))}
               {!fieldErrors.password?.length && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Must be at least 8 characters with uppercase, lowercase, and number
                 </p>
               )}
@@ -301,18 +300,18 @@ export default function RegisterPage() {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password <span className="text-red-500">*</span>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground/80 mb-1">
+                Confirm Password <span className="text-destructive">*</span>
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
-                  className={`w-full pl-10 pr-16 py-1.5 border rounded outline-none ${
-                    !passwordMatch && formData.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full pl-10 pr-16 py-1.5 border rounded outline-none bg-background text-foreground placeholder:text-muted-foreground ${
+                    !passwordMatch && formData.confirmPassword ? 'border-destructive/50' : 'border-border'
                   }`}
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
@@ -320,21 +319,21 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-8 top-1/2 transform -translate-y-1/2"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
                 {passwordMatch && formData.confirmPassword && (
-                  <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                 )}
               </div>
               {fieldErrors.confirmPassword && fieldErrors.confirmPassword.map((error, index) => (
-                <p key={index} className="mt-1 text-xs text-red-600">{error}</p>
+                <p key={index} className="mt-1 text-xs text-destructive">{error}</p>
               ))}
             </div>
 
@@ -344,17 +343,17 @@ export default function RegisterPage() {
                 id="terms"
                 type="checkbox"
                 required
-                className="mt-1 h-4 w-4 text-[#6A011D] border-gray-300 rounded"
+                className="mt-1 h-4 w-4 text-primary border-border rounded"
                 checked={isTermsAccepted}
                 onChange={(e) => setIsTermsAccepted(e.target.checked)}
               />
-              <label htmlFor="terms" className="ml-3 text-gray-600">
+              <label htmlFor="terms" className="ml-3 text-muted-foreground">
                 I agree to the{' '}
-                <Link href="/terms" className="text-[#6A011D] hover:text-[#550117] underline">
+                <Link href="/terms" className="text-primary hover:text-primary/90 underline">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy" className="text-[#6A011D] hover:text-[#550117] underline">
+                <Link href="/privacy" className="text-primary hover:text-primary/90 underline">
                   Privacy Policy
                 </Link>
               </label>
@@ -362,8 +361,8 @@ export default function RegisterPage() {
 
             {/* Error Display */}
             {displayError && (
-              <div className="rounded bg-red-50 p-3 border border-red-200">
-                <div className="text-sm text-red-700">{displayError}</div>
+              <div className="rounded bg-destructive/10 p-3 border border-destructive/30">
+                <div className="text-sm text-destructive">{displayError}</div>
               </div>
             )}
 
@@ -371,7 +370,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={loading || hasFieldErrors || !isTermsAccepted}
-              className="w-full py-2.5 bg-gradient-to-r from-[#6A011D] to-[#8B0000] hover:from-[#550117] hover:to-[#7A0000] text-white font-semibold rounded shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-semibold rounded shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? 'Creating Account...' : 'Create Account'}
@@ -379,7 +378,7 @@ export default function RegisterPage() {
 
             {/* Info about next steps */}
             <div className="text-center">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 After registration, you'll choose how you want to use JOINup
               </p>
             </div>
@@ -387,11 +386,11 @@ export default function RegisterPage() {
 
           {/* Footer */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link 
                 href="/auth/login" 
-                className="font-medium text-[#6A011D] hover:text-[#550117] transition-colors"
+                className="font-medium text-primary hover:text-primary/90 transition-colors"
               >
                 Sign in here
               </Link>

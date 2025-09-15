@@ -67,7 +67,7 @@ const FeaturedEvents = () => {
             <p className="text-red-600">Error: {error}</p>
             <button 
               onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-[#6A011D] text-white rounded-lg hover:bg-[#550117]"
+              className="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-primary"
             >
               Try Again
             </button>
@@ -84,15 +84,15 @@ const FeaturedEvents = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Featured Educational Events</h2>
-            <p className="text-sm text-gray-600 mt-1">Educational conferences and workshops</p>
+            <h2 className="text-xl font-bold text-text">Featured Events</h2>
+            <p className="text-sm text-muted-foreground mt-1">Educational conferences and workshops</p>
           </div>
           
           {/* Pagination dots */}
           <div className="hidden md:flex space-x-2">
-            <div className="w-2 h-2 bg-[#6A011D] rounded-full"></div>
-            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+            <div className="w-2 h-2 bg-accent rounded-full"></div>
+            <div className="w-2 h-2 bg-muted rounded-full"></div>
+            <div className="w-2 h-2 bg-muted rounded-full"></div>
           </div>
         </div>
 
@@ -112,9 +112,9 @@ const FeaturedEvents = () => {
         <div className="text-center">
           <a
             href="/organizer/auth"
-            className="inline-flex items-center px-8 py-3 bg-[#6A011D] text-white rounded-lg hover:bg-[#550117] transition-colors font-medium"
+            className="inline-flex items-center px-6 py-2 bg-primary text-white rounded-sm hover:bg-primary/90 transition-colors font-medium"
           >
-            Host Your Educational Event
+            Host Your Event
           </a>
         </div>
 

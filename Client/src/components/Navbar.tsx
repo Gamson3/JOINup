@@ -18,12 +18,12 @@ const Navbar = () => {
         {/* lets use just sign in for the sign in/sign up button */}
         <div className="flex gap-4">
           <Link href="/auth/login">
-            <Button variant="outline" className="border-[#6A011D] text-black cursor-pointer">
+            <Button variant="secondary" className="bg-white hover:bg-muted text-text rounded-sm cursor-pointer">
               Sign In
             </Button>
           </Link>
           <Link href="/auth/register">
-            <Button className="bg-[#6A011D] text-white hover:bg-[#550117] cursor-pointer">
+            <Button className="bg-primary text-white hover:bg-primary/90 rounded-sm cursor-pointer">
               Sign Up
             </Button>
           </Link>

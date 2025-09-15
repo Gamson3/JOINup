@@ -9,17 +9,17 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        id: string;
+        id: number;
         email: string;
         name: string;
-        role: 'ORGANIZER' | 'ATTENDEE' | 'ADMIN' | 'PENDING';
+        roles: ('attendee' | 'presenter' | 'organizer' | 'admin')[];
       };
     }
   }
 }
 
 interface JWTPayload {
-  userId: string;
+  userId: number;
   type: 'access' | 'refresh';
   iat: number;
   exp: number;
@@ -62,12 +62,7 @@ export const authenticateToken = async (
     // Get user from database
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true
-      }
+      select: { id: true, email: true, name: true, roles: true }
     });
 
     if (!user) {
@@ -138,21 +133,11 @@ export const optionalAuth = async (
     // Get user from database
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true
-      }
+      select: { id: true, email: true, name: true, roles: true }
     });
 
     if (user) {
-      req.user = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      };
+      req.user = user;
     }
 
     next();
@@ -162,143 +147,88 @@ export const optionalAuth = async (
   }
 };
 
-/**
- * Role-based authorization middleware
- * Requires specific user roles
- */
-export const requireRole = (...allowedRoles: ('ORGANIZER' | 'ATTENDEE' | 'ADMIN' | 'PENDING')[]) => {
+// Role-based authorization
+export const requireRole = (...allowedRoles: ('attendee' | 'presenter' | 'organizer' | 'admin')[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({ 
-        success: false,
-        message: 'Authentication required',
-        code: 'AUTH_REQUIRED'
-      });
+      res.status(401).json({ success: false, message: 'Authentication required', code: 'AUTH_REQUIRED' });
       return;
     }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      res.status(403).json({ 
+    if (!req.user.roles.some(r => allowedRoles.includes(r))) {
+      res.status(403).json({
         success: false,
         message: `Access denied. Required roles: ${allowedRoles.join(', ')}`,
         code: 'INSUFFICIENT_PERMISSIONS'
       });
       return;
     }
-
     next();
   };
 };
 
-/**
- * Middleware to require admin role
- */
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
-    res.status(401).json({ 
-      success: false,
-      message: 'Authentication required',
-      code: 'AUTH_REQUIRED'
-    });
+    res.status(401).json({ success: false, message: 'Authentication required', code: 'AUTH_REQUIRED' });
     return;
   }
-
-  if (req.user.role !== 'ADMIN') {
-    res.status(403).json({ 
-      success: false,
-      message: 'Admin access required',
-      code: 'ADMIN_REQUIRED'
-    });
+  if (!req.user.roles.includes('admin')) {
+    res.status(403).json({ success: false, message: 'Admin access required', code: 'ADMIN_REQUIRED' });
     return;
   }
-
   next();
 };
 
-/**
- * Middleware to require organizer role
- */
 export const requireOrganizer = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
-    res.status(401).json({ 
-      success: false,
-      message: 'Authentication required',
-      code: 'AUTH_REQUIRED'
-    });
+    res.status(401).json({ success: false, message: 'Authentication required', code: 'AUTH_REQUIRED' });
     return;
   }
-
-  if (req.user.role !== 'ORGANIZER' && req.user.role !== 'ADMIN') {
-    res.status(403).json({ 
-      success: false,
-      message: 'Organizer access required',
-      code: 'ORGANIZER_REQUIRED'
-    });
+  if (!(req.user.roles.includes('organizer') || req.user.roles.includes('admin'))) {
+    res.status(403).json({ success: false, message: 'Organizer access required', code: 'ORGANIZER_REQUIRED' });
     return;
   }
-
   next();
 };
 
-/**
- * Resource ownership middleware
- * Ensures user can only access their own resources
- */
+// Resource ownership middleware (Conference)
 export const requireOwnership = (resourceIdParam: string = 'id') => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
-        res.status(401).json({ 
-          success: false,
-          message: 'Authentication required',
-          code: 'AUTH_REQUIRED'
-        });
+        res.status(401).json({ success: false, message: 'Authentication required', code: 'AUTH_REQUIRED' });
         return;
       }
 
-      const resourceId = req.params[resourceIdParam];
+      const resourceId = Number(req.params[resourceIdParam]);
       const userId = req.user.id;
 
-      // Admin can access any resource
-      if (req.user.role === 'ADMIN') {
+      if (req.user.roles.includes('admin')) {
         next();
         return;
       }
 
-      // For events, check if user is the organizer
-      if (req.route.path.includes('/events/')) {
-        const event = await prisma.event.findUnique({
+      // For conferences, check organizer (createdById)
+      if (req.route.path.includes('/conferences/')) {
+        const conf = await prisma.conference.findUnique({
           where: { id: resourceId },
-          select: { organizerId: true }
+          select: { createdById: true }
         });
 
-        if (!event) {
-          res.status(404).json({ 
-            success: false,
-            message: 'Resource not found',
-            code: 'RESOURCE_NOT_FOUND'
-          });
+        if (!conf) {
+          res.status(404).json({ success: false, message: 'Resource not found', code: 'RESOURCE_NOT_FOUND' });
           return;
         }
 
-        if (event.organizerId !== userId) {
-          res.status(403).json({ 
-            success: false,
-            message: 'Access denied. You can only access your own resources',
-            code: 'OWNERSHIP_REQUIRED'
-          });
+        if (conf.createdById !== userId) {
+          res.status(403).json({ success: false, message: 'Access denied. You can only access your own resources', code: 'OWNERSHIP_REQUIRED' });
           return;
         }
       }
 
-      // For user resources, check if accessing own data
+      // For user resources
       if (req.route.path.includes('/users/') || req.route.path.includes('/profile/')) {
         if (resourceId !== userId) {
-          res.status(403).json({ 
-            success: false,
-            message: 'Access denied. You can only access your own data',
-            code: 'OWNERSHIP_REQUIRED'
-          });
+          res.status(403).json({ success: false, message: 'Access denied. You can only access your own data', code: 'OWNERSHIP_REQUIRED' });
           return;
         }
       }
@@ -306,81 +236,50 @@ export const requireOwnership = (resourceIdParam: string = 'id') => {
       next();
     } catch (error) {
       console.error('Ownership check error:', error);
-      res.status(500).json({ 
-        success: false,
-        message: 'Authorization check failed',
-        code: 'AUTH_CHECK_ERROR'
-      });
+      res.status(500).json({ success: false, message: 'Authorization check failed', code: 'AUTH_CHECK_ERROR' });
     }
   };
 };
 
-/**
- * Middleware to validate event ownership for organizers
- */
-export const validateEventOwnership = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+// Validate conference ownership
+export const validateEventOwnership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({ 
-        success: false,
-        message: 'Authentication required',
-        code: 'AUTH_REQUIRED'
-      });
+      res.status(401).json({ success: false, message: 'Authentication required', code: 'AUTH_REQUIRED' });
       return;
     }
 
-    const eventId = req.params.eventId || req.params.id;
+    const conferenceIdRaw = req.params.eventId || req.params.id;
+    const conferenceId = Number(conferenceIdRaw);
 
-    if (!eventId) {
-      res.status(400).json({ 
-        success: false,
-        message: 'Event ID required',
-        code: 'EVENT_ID_REQUIRED'
-      });
+    if (!conferenceId) {
+      res.status(400).json({ success: false, message: 'Conference ID required', code: 'EVENT_ID_REQUIRED' });
       return;
     }
 
-    // Admin can access any event
-    if (req.user.role === 'ADMIN') {
+    if (req.user.roles.includes('admin')) {
       next();
       return;
     }
 
-    // Check if user owns the event
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      select: { organizerId: true }
+    const conf = await prisma.conference.findUnique({
+      where: { id: conferenceId },
+      select: { createdById: true }
     });
 
-    if (!event) {
-      res.status(404).json({ 
-        success: false,
-        message: 'Event not found',
-        code: 'EVENT_NOT_FOUND'
-      });
+    if (!conf) {
+      res.status(404).json({ success: false, message: 'Conference not found', code: 'EVENT_NOT_FOUND' });
       return;
     }
 
-    if (event.organizerId !== req.user.id) {
-      res.status(403).json({ 
-        success: false,
-        message: 'Access denied. You can only manage your own events',
-        code: 'EVENT_OWNERSHIP_REQUIRED'
-      });
+    if (conf.createdById !== req.user.id) {
+      res.status(403).json({ success: false, message: 'Access denied. You can only manage your own conferences', code: 'EVENT_OWNERSHIP_REQUIRED' });
       return;
     }
 
     next();
   } catch (error) {
-    console.error('Event ownership validation error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Event ownership validation failed',
-      code: 'EVENT_OWNERSHIP_CHECK_ERROR'
-    });
+    console.error('Conference ownership validation error:', error);
+    res.status(500).json({ success: false, message: 'Conference ownership validation failed', code: 'EVENT_OWNERSHIP_CHECK_ERROR' });
   }
 };

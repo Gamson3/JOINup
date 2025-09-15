@@ -14,8 +14,8 @@ const SecondaryNavbar = () => {
           <div className="flex items-center gap-4">
             
             {/* Search Bar */}
-            <div className="hidden lg:flex items-center bg-gray-200 rounded px-4 py-2 min-w-[250px]">
-              <Search className="h-4 w-4 text-gray-500 mr-2" />
+            <div className="hidden lg:flex items-center bg-gray-200 rounded-sm px-4 py-2 min-w-[250px]">
+              <Search className="h-4 w-4 text-text/60 mr-2" />
               <input 
                 type="text" 
                 placeholder="Search events..."
@@ -27,7 +27,7 @@ const SecondaryNavbar = () => {
             <Button 
               variant="outline" 
               size="sm"
-              className="hidden md:flex items-center gap-2 border-gray-300 rounded"
+              className="hidden md:flex items-center gap-2 border-gray-300 rounded-sm"
             >
               <Filter className="h-3 w-3" />
               Filter
@@ -40,7 +40,7 @@ const SecondaryNavbar = () => {
             {/* All Events */}
             <Link 
               href="/events" 
-              className="flex flex-col items-center group hover:text-[#6A011D] transition-colors"
+              className="flex flex-col items-center group hover:text-primary transition-colors"
             >
               <Globe className="h-4 w-4 mb-1 group-hover:scale-110 transition-transform" />
               <span className="text-sm">All Events</span>
@@ -49,7 +49,7 @@ const SecondaryNavbar = () => {
             {/* Happening Today */}
             <Link 
               href="/events/today" 
-              className="flex flex-col items-center group hover:text-[#6A011D] transition-colors"
+              className="flex flex-col items-center group hover:text-primary transition-colors"
             >
               <Calendar className="h-4 w-4 mb-1 group-hover:scale-110 transition-transform" />
               <span className="text-sm">Happening Today</span>
@@ -58,7 +58,7 @@ const SecondaryNavbar = () => {
             {/* Add Event */}
             <Link 
               href="/organizer/auth" 
-              className="flex flex-col items-center group hover:text-[#6A011D] transition-colors"
+              className="flex flex-col items-center group hover:text-primary transition-colors"
             >
               <Plus className="h-4 w-4 mb-1 group-hover:scale-110 transition-transform" />
               <span className="text-sm">Add Event</span>

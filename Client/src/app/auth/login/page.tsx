@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Loader2, User, Mail, Lock, Building } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, loading, clearAuthError } = useAuth();
+  const { loginAttendee, loading, clearAuthError } = useAuth();
   const globalError = useAppSelector(selectAuthError);
   
   const [formData, setFormData] = useState({
@@ -18,6 +18,7 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [remember, setRemember] = useState(false);
 
   // Clear errors when component mounts or form changes
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function LoginPage() {
     try {
       setLocalError('');
       clearAuthError();
-      await login(formData.email, formData.password);
+      await loginAttendee(formData.email, formData.password, remember);
     } catch (err: any) {
       setLocalError(err.message);
     }
@@ -59,20 +60,20 @@ export default function LoginPage() {
   const displayError = localError || globalError;
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         
         {/* Card */}
-        <div className="bg-white rounded-xl shadow-3xl p-6">
+        <div className="bg-card rounded-xl shadow-3xl p-6">
           {/* Header - Reduced spacing */}
           <div className="text-center mb-6">
-            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gradient-to-r from-[#6A011D] to-[#8B0000] mb-3">
-              <User className="h-4 w-4 text-white" />
+            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gradient-to-r from-primary to-accent mb-3">
+              <User className="h-4 w-4 text-primary-foreground" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-foreground">
               Welcome to JOINup
             </h2>
-            <p className="mt-1 text-gray-600 text-sm">
+            <p className="mt-1 text-muted-foreground text-sm">
               Discover and join amazing events
             </p>
           </div>
@@ -80,17 +81,17 @@ export default function LoginPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Email Field - Reduced spacing */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground/80 mb-1">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   id="email"
                   name="email"
                   type="email"
                   required
-                  className="w-full pl-10 pr-4 py-1.5 border border-gray-300 rounded outline-none"
+                  className="w-full pl-10 pr-4 py-1.5 border border-border rounded outline-none bg-background text-foreground placeholder:text-muted-foreground"
                   placeholder="Enter your email address"
                   value={formData.email}
                   onChange={handleChange}
@@ -100,30 +101,30 @@ export default function LoginPage() {
 
             {/* Password Field - Reduced spacing */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground/80 mb-1">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  className="w-full pl-10 pr-12 py-1.5 border border-gray-300 rounded outline-none"
+                  className="w-full pl-10 pr-12 py-1.5 border border-border rounded outline-none bg-background text-foreground placeholder:text-muted-foreground"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
               </div>
@@ -136,15 +137,17 @@ export default function LoginPage() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-3 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-3 w-4 text-primary focus:ring-primary border-border rounded"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-gray-700">
+                <label htmlFor="remember-me" className="ml-2 text-foreground/80">
                   Remember me
                 </label>
               </div>
               <Link 
                 href="/auth/forgot-password" 
-                className="text-[#6A011D] hover:text-[#550117] transition-colors"
+                className="text-primary hover:text-primary/90 transition-colors"
               >
                 Forgot password?
               </Link>
@@ -152,8 +155,8 @@ export default function LoginPage() {
 
             {/* Error Display - Compact */}
             {displayError && (
-              <div className="rounded bg-red-50 p-3 border border-red-200">
-                <div className="text-sm text-red-700">{displayError}</div>
+              <div className="rounded bg-destructive/10 p-3 border border-destructive/30">
+                <div className="text-sm text-destructive">{displayError}</div>
               </div>
             )}
 
@@ -161,7 +164,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-gradient-to-r from-[#6A011D] to-[#8B0000] hover:from-[#550117] hover:to-[#7A0000] text-white font-semibold rounded shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-semibold rounded shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? 'Signing in...' : 'Sign In'}
@@ -172,11 +175,11 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={fillTestCredentials}
-                className="text-xs px-3 py-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                className="text-xs px-3 py-1.5 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 transition-colors"
               >
                 Fill Test Credentials
               </button>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 attendee@example.com / password123
               </p>
             </div>
@@ -184,24 +187,23 @@ export default function LoginPage() {
 
           {/* Footer - Reduced spacing and more compact */}
           <div className="mt-6 text-center space-y-3">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link 
                 href="/auth/register" 
-                className="font-medium text-[#6A011D] hover:text-[#550117] transition-colors"
+                className="font-medium text-primary hover:text-primary/90 transition-colors"
               >
                 Sign up here
               </Link>
             </p>
             
-            {/* Organizer Link - More compact */}
-            <div className="pt-3 border-t border-gray-200">
-              <p className="text-xs text-gray-600 mb-2">
+            <div className="pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">
                 Want to organize events?
               </p>
               <Link 
                 href="/auth/organizer/login" 
-                className="inline-flex items-center px-3 py-1 text-xs font-medium text-[#6A011D] bg-[#6A011D]/10 hover:bg-[#6A011D]/20 rounded transition-colors"
+                className="inline-flex items-center px-3 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors"
               >
                 <Building className="h-3 w-3 mr-1.5" />
                 Organizer Login

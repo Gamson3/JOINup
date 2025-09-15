@@ -24,11 +24,12 @@ const CTASection = () => (
             <p className="mb-8">
                 Join organizers around the world who are streamlining their conferences with our all-in-one platform.
             </p>
-            <Button 
-              className="bg-white text-blue-600 px-6 py-3 rounded-xl shadow-lg hover:bg-gray-200 h-12 cursor-pointer"
+            <Link
+              href="/auth/register"
+              className="bg-white text-text px-6 py-3 rounded-xl shadow-lg hover:bg-muted h-12 cursor-pointer"
             >
               Sign Up Now
-            </Button>
+            </Link>
           </div>
         </div>
       </div>
